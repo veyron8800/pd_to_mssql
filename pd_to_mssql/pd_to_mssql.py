@@ -1,7 +1,5 @@
 import pandas as pd
-import numpy as np
 import pyodbc
-from multiprocessing import Process, Queue
 from threading import Thread
 import math
 
