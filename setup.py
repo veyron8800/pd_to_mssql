@@ -2,13 +2,13 @@ from distutils.core import setup
 setup(
     name='pd_to_mssql',
     packages=['pd_to_mssql'],
-    version=0.11,
+    version='0.1.1',
     license='MIT',
     description='Quick upload of pandas dataframes to Microsoft SQL Server',
     author='Andrew Reis',
     author_email='areis@taylorcorp.com',
     url='https://github.com/areisTaylorCorp/pd_to_mssql',
-    download_url='https://github.com/areisTaylorCorp/pd_to_mssql/archive/v0.11.tar.gz',
+    download_url='https://github.com/areisTaylorCorp/pd_to_mssql/archive/v0.1.1.tar.gz',
     keywords=['pandas', 'dataframe', 'mssql', 'sql', 'to_sql'],
     install_requires=['pandas', 'pyodbc'],
     classifiers=[
