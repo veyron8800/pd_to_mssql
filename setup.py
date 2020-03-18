@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
     name='pd_to_mssql',
     packages=['pd_to_mssql'],
-    version=0.1,
+    version=0.11,
     license='MIT',
     description='Quick upload of pandas dataframes to Microsoft SQL Server',
     author='Andrew Reis',
