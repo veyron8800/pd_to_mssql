@@ -8,7 +8,7 @@ setup(
     author='Andrew Reis',
     author_email='areis@taylorcorp.com',
     url='https://github.com/areisTaylorCorp/pd_to_mssql',
-    download_url='https://github.com/areisTaylorCorp/pd_to_mssql/archive/v0.1.tar.gz',
+    download_url='https://github.com/areisTaylorCorp/pd_to_mssql/archive/v0.11.tar.gz',
     keywords=['pandas', 'dataframe', 'mssql', 'sql', 'to_sql'],
     install_requires=['pandas', 'pyodbc'],
     classifiers=[
