@@ -1,1 +1,1 @@
-from pd_to_mssql import  to_sql
+from pd_to_mssql.pd_to_mssql import to_sql
