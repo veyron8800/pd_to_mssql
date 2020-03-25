@@ -3,6 +3,7 @@ import pyodbc
 from multiprocessing import Queue
 from threading import Thread
 import math
+from distutils.util import strtobool
 
 
 def task(table_name, cnxn_string, df_queue, columns, ignore_truncation):
@@ -29,15 +30,17 @@ def task(table_name, cnxn_string, df_queue, columns, ignore_truncation):
                 if pd.isnull(row[column]):
                     insert_line += 'NULL, '
                 # ANSI char type
-                elif data_type in ('varchar', 'date', 'datetime2', 'datetime', 'char', 'text'):
+                elif data_type in ('varchar', 'char', 'text', 'date', 'datetime2', 'datetime', 'datetimeoffset', 'smalldatetime', 'time'):
                     insert_line += f"'{row[column]}', "
                 # Unicode
                 elif data_type in ('nvarchar', 'nchar', 'ntext'):
                     insert_line += f"N'{row[column]}', "
                 # Numeric
-                elif data_type in ('bigint', 'bit', 'decimal', 'int', 'money', 'numeric', 'smallint', 'smallmoney',
+                elif data_type in ('bigint', 'decimal', 'int', 'money', 'numeric', 'smallint', 'smallmoney',
                                    'tinyint', 'float', 'real'):
                     insert_line += row[column] + ', '
+                elif data_type == 'bit':
+                    insert_line += str(strtobool(row[column])) + ', '
             insert_statement += insert_line[:-2] + '),\n'
         insert_statement = insert_statement[:-2]
         crsr.execute(insert_statement)
