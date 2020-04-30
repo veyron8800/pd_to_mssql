@@ -7,8 +7,8 @@ from distutils.util import strtobool
 
 
 def task(table_name, cnxn_string, df_queue, columns, ignore_truncation):
-    column_specification = str(tuple(columns['SELECT_SAFE_COLUMN_NAME'])).replace("'", "")
-    column_select_list = column_specification.replace('(', '').replace(')', '')
+    column_select_list = ', '.join(columns['SELECT_SAFE_COLUMN_NAME'])
+    column_specification = '(' + column_select_list + ')'
 
     cnxn = pyodbc.connect(cnxn_string)
     crsr = cnxn.cursor()
