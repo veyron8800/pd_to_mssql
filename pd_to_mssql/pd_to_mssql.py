@@ -130,7 +130,7 @@ def to_sql(df_in, table_name, cnxn_string, schema='dbo', index=True, replace=Fal
 
     # truncation will occur on character based data types
     if not ignore_truncation:
-        max_char_cols = columns[~columns['CHARACTER_MAXIMUM_LENGTH'].isnull()][['COLUMN_NAME', 'CHARACTER_MAXIMUM_LENGTH']]
+        max_char_cols = columns[(~columns['CHARACTER_MAXIMUM_LENGTH'].isnull()) & (columns['CHARACTER_MAXIMUM_LENGTH'] != -1)][['COLUMN_NAME', 'CHARACTER_MAXIMUM_LENGTH']]
         for col, max_char in zip(max_char_cols['COLUMN_NAME'], max_char_cols['CHARACTER_MAXIMUM_LENGTH']):
             if df_out[col].apply(lambda x: len(str(x)) if not pd.isnull(x) else 0).max() > max_char:
                 raise TruncationException(f"Column '{col}' contains elements that are too large for the destination table.\n"
