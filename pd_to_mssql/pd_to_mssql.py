@@ -97,8 +97,8 @@ def thread_manager(table_name, schema, cnxn_string, thread_count, df_queue, colu
 
 def to_sql(df_in, table_name, cnxn_string, schema='dbo', index=True, replace=False, chunk_size=1000, thread_count=5, ignore_truncation=False, ignore_missing=False):
     if len(df_in) == 0:
-        print(f"\nWarning: Attempting to upload an empty dataframe.\n"
-              f"An Error will not be thrown, but the operation will be skipped.\n")
+        print("\nWarning: Attempting to upload an empty dataframe.\n"
+              "An Error will not be thrown, but the operation will be skipped.\n")
         return
 
     # Make a copy of the data, as to not apply adjustments to the original dataframe
