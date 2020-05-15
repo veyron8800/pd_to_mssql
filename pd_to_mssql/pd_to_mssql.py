@@ -4,6 +4,8 @@ from queue import Queue
 from threading import Thread
 import math
 from distutils.util import strtobool
+import shutil
+import os
 
 
 class TruncationException(Exception):
@@ -32,7 +34,8 @@ def task(table_name, schema, cnxn_string, df_queue, columns, ignore_truncation, 
     if ignore_truncation:
         crsr.execute('SET ANSI_WARNINGS OFF')
 
-    crsr.execute(f'SELECT {column_select_list} INTO #TEMP FROM {schema}.{table_name} WHERE 1=0')
+    temp_table_statement = f'SELECT {column_select_list} INTO #TEMP FROM {schema}.{table_name} WHERE 1=0'
+    crsr.execute(temp_table_statement)
     crsr.commit()
 
     try:
@@ -63,7 +66,17 @@ def task(table_name, schema, cnxn_string, df_queue, columns, ignore_truncation, 
             crsr.execute(insert_statement)
             crsr.commit()
     except Exception as e:
-        exceptions.put(e)
+        splits = insert_statement.split('\n')
+        header = splits[0]
+        for i, line in enumerate(splits[1:]):
+            test_statement = header + '\n' + line.replace('),', ')')
+            try:
+                crsr.execute(test_statement)
+                crsr.commit()
+            except Exception as e2:
+                dbug_statement = temp_table_statement + '\n' + test_statement + f'-- index = {i}'
+                break
+        exceptions.put({'Exception': e, 'statement': dbug_statement, 'df': df.reset_index(drop=True)})
         return
 
     cursors.put(crsr)
@@ -80,8 +93,25 @@ def thread_manager(table_name, schema, cnxn_string, thread_count, df_queue, colu
 
     if exceptions.qsize() > 0:
         exception_out = '\n'
+        dir_name = '__pd_to_mssql_exception'
+        if dir_name in os.listdir(os.getcwd()):
+            shutil.rmtree(dir_name)
+
+        os.mkdir(dir_name)
+        exception_counter = 0
         while not exceptions.empty():
-            exception_out += str(exceptions.get()) + '\n'
+            except_package = exceptions.get()
+            except_dir = dir_name + f'/Exception{exception_counter}'
+            os.mkdir(except_dir)
+
+            with open(except_dir + '/dbug_statement.sql', 'w') as fout:
+                fout.write(except_package['statement'])
+
+            except_package['df'].to_pickle(except_dir + '/dbug_df.pickle')
+
+            exception_out += str(except_package['Exception']) + '\n'
+            exception_counter += 1
+
         raise SQLException(exception_out)
 
     column_select_list = ', '.join(columns['SELECT_SAFE_COLUMN_NAME'])
