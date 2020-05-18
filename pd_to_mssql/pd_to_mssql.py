@@ -149,6 +149,7 @@ def to_sql(df_in, table_name, cnxn_string, schema='dbo', index=True, replace=Fal
     ORDER BY ORDINAL_POSITION"""
     df_table = pd.read_sql(query, pyodbc.connect(cnxn_string))
     df_table['SELECT_SAFE_COLUMN_NAME'] = df_table['COLUMN_NAME'].apply(lambda x: '[' + str(x) + ']')
+    # Identity columns are filtered out, as population is handled by the SQL Server
     columns = df_table[df_table['IDENTITY_FLAG'] == 0][['COLUMN_NAME', 'SELECT_SAFE_COLUMN_NAME', 'DATA_TYPE', 'IS_NULLABLE', 'CHARACTER_MAXIMUM_LENGTH']]
 
     # Check for common insertion errors
@@ -179,7 +180,7 @@ def to_sql(df_in, table_name, cnxn_string, schema='dbo', index=True, replace=Fal
     if replace:
         cnxn = pyodbc.connect(cnxn_string)
         crsr = cnxn.cursor()
-        crsr.execute(f"DELETE FROM {schema}.{table_name}")
+        crsr.execute(f"TRUNCATE TABLE {schema}.{table_name}")
         crsr.commit()
         crsr.close()
         cnxn.close()
