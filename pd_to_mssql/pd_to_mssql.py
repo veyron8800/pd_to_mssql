@@ -34,10 +34,12 @@ def task(table_name, schema, cnxn_string, df_queue, columns, ignore_truncation, 
     if ignore_truncation:
         crsr.execute('SET ANSI_WARNINGS OFF')
 
+    # Create temp tables based on target table definition
     temp_table_statement = f'SELECT {column_select_list} INTO #TEMP FROM {schema}.{table_name} WHERE 1=0'
     crsr.execute(temp_table_statement)
     crsr.commit()
 
+    # generate and execute insertion statements
     try:
         while not df_queue.empty():
             df = df_queue.get()
@@ -79,10 +81,11 @@ def task(table_name, schema, cnxn_string, df_queue, columns, ignore_truncation, 
         exceptions.put({'Exception': e, 'statement': dbug_statement, 'df': df.reset_index(drop=True)})
         return
 
+    # Save the cursor to be used later when temp table is emptied into the target table
     cursors.put(crsr)
 
 
-def thread_manager(table_name, schema, cnxn_string, thread_count, df_queue, columns, ignore_truncation):
+def thread_manager(table_name, schema, cnxn_string, thread_count, df_queue, columns, ignore_truncation, replace):
     cursors = Queue()
     exceptions = Queue()
     threads = [Thread(target=task, args=(table_name, schema, cnxn_string, df_queue, columns, ignore_truncation, cursors, exceptions)) for i in range(thread_count)]
@@ -91,6 +94,8 @@ def thread_manager(table_name, schema, cnxn_string, thread_count, df_queue, colu
     for thread in threads:
         thread.join()
 
+    # handle exceptions if there are any
+    # logic will raise a SQLException that includes all insertion errors if there are multiple
     if exceptions.qsize() > 0:
         exception_out = '\n'
         dir_name = '__pd_to_mssql_exception'
@@ -114,6 +119,16 @@ def thread_manager(table_name, schema, cnxn_string, thread_count, df_queue, colu
 
         raise SQLException(exception_out)
 
+    # Only truncate the table for replacement if all threads complete temp table insertion without any issues
+    if replace:
+        cnxn = pyodbc.connect(cnxn_string)
+        crsr = cnxn.cursor()
+        crsr.execute(f"TRUNCATE TABLE {schema}.{table_name}")
+        crsr.commit()
+        crsr.close()
+        cnxn.close()
+
+    # insert into the target table from all of the temp tables
     column_select_list = ', '.join(columns['SELECT_SAFE_COLUMN_NAME'])
     column_specification = '(' + column_select_list + ')'
     while not cursors.empty():
@@ -177,14 +192,6 @@ def to_sql(df_in, table_name, cnxn_string, schema='dbo', index=True, replace=Fal
                 raise TruncationException(f"Column '{col}' contains elements that are too large for the destination table.\n"
                                           'To avoid this error and allow string data truncation, set the keyword parameter ignore_truncation=True')
 
-    if replace:
-        cnxn = pyodbc.connect(cnxn_string)
-        crsr = cnxn.cursor()
-        crsr.execute(f"TRUNCATE TABLE {schema}.{table_name}")
-        crsr.commit()
-        crsr.close()
-        cnxn.close()
-
     # stringify
     for column in df_out.columns:
         df_out[column] = df_out[column].apply(lambda x: str(x).replace("'", "''") if not pd.isnull(x) else x)
@@ -203,4 +210,4 @@ def to_sql(df_in, table_name, cnxn_string, schema='dbo', index=True, replace=Fal
     for df in output_dfs:
         df_queue.put(df)
 
-    thread_manager(table_name, schema, cnxn_string, thread_count, df_queue, columns, ignore_truncation)
+    thread_manager(table_name, schema, cnxn_string, thread_count, df_queue, columns, ignore_truncation, replace)
