@@ -1,7 +1,4 @@
-from distutils.core import setup
-
-with open('README.md', 'r') as fin:
-    README = fin.read()
+from setuptools import setup
 
 setup(
     name='pd_to_mssql',
@@ -23,6 +20,6 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8'
     ],
-    long_description=README,
-    long_description_content_type='text/markdown'
+    long_description_content_type='text/markdown',
+    long_description=open('README.md', 'r').read()
 )
