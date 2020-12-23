@@ -3,13 +3,13 @@ from setuptools import setup
 setup(
     name='pd_to_mssql',
     packages=['pd_to_mssql'],
-    version='0.2.0',
+    version='0.2.1',
     license='MIT',
     description='Quick upload of pandas dataframes to Microsoft SQL Server',
     author='Andrew Reis',
     author_email='veyron8800@gmail.com',
     url='https://github.com/veyron8800/pd_to_mssql',
-    download_url='https://github.com/veyron8800/pd_to_mssql/archive/v0.2.0.tar.gz',
+    download_url='https://github.com/veyron8800/pd_to_mssql/archive/v0.2.1.tar.gz',
     keywords=['pandas', 'dataframe', 'mssql', 'sql', 'to_sql', 'df', 'pyodbc'],
     install_requires=['pandas', 'pyodbc'],
     classifiers=[
