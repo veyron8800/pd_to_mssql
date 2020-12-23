@@ -52,11 +52,16 @@ def task(table_name, schema, cnxn_string, df_queue, columns, ignore_truncation, 
                     if pd.isnull(row[column]):
                         insert_line += 'NULL, '
                     # ANSI char type
-                    elif data_type in ('varchar', 'char', 'text', 'date', 'datetime2', 'datetime', 'datetimeoffset', 'smalldatetime', 'time'):
-                        insert_line += f"'{row[column]}', "
+                    elif data_type in ('varchar', 'char', 'text'):
+                        insert_text = row[column].replace("\n", "'+CHAR(10)+'")
+                        insert_line += f"'{insert_text}', "
                     # Unicode
                     elif data_type in ('nvarchar', 'nchar', 'ntext'):
-                        insert_line += f"N'{row[column]}', "
+                        insert_text = row[column].replace("\n", "'+CHAR(10)+N'")
+                        insert_line += f"N'{insert_text}', "
+                    # datetime
+                    elif data_type in ('date', 'datetime2', 'time'):
+                        insert_line += f"'{row[column]}', "
                     # Numeric
                     elif data_type in ('bigint', 'decimal', 'int', 'money', 'numeric', 'smallint', 'smallmoney',
                                        'tinyint', 'float', 'real'):
@@ -195,7 +200,6 @@ def to_sql(df_in, table_name, cnxn_string, schema='dbo', index=True, replace=Fal
     # stringify
     for column in df_out.columns:
         df_out[column] = df_out[column].apply(lambda x: str(x).replace("'", "''") if not pd.isnull(x) else x)
-        df_out[column] = df_out[column].apply(lambda x: x.replace('\n', '\\n') if not pd.isnull(x) else x)
 
     chunk_count = math.ceil(float(len(df_out.index))/chunk_size)
 
